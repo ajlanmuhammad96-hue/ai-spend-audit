@@ -1,65 +1,286 @@
-import Image from "next/image";
+"use client"
+
+import { useState, useEffect } from "react"
 
 export default function Home() {
+  const [formData, setFormData] = useState({
+    tools: [
+      {
+        tool: "",
+        plan: "",
+        spend: "",
+        seats: "",
+      },
+    ],
+    teamSize: "",
+    useCase: "",
+  })
+
+  const [auditResult, setAuditResult] = useState(null)
+
+  useEffect(() => {
+    const savedData = localStorage.getItem("audit-form")
+
+    if (savedData) {
+      setFormData(JSON.parse(savedData))
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(
+      "audit-form",
+      JSON.stringify(formData)
+    )
+  }, [formData])
+
+  const handleToolChange = (index, field, value) => {
+    const updatedTools = [...formData.tools]
+
+    updatedTools[index][field] = value
+
+    setFormData({
+      ...formData,
+      tools: updatedTools,
+    })
+  }
+
+  const addTool = () => {
+    setFormData({
+      ...formData,
+      tools: [
+        ...formData.tools,
+        {
+          tool: "",
+          plan: "",
+          spend: "",
+          seats: "",
+        },
+      ],
+    })
+  }
+
+  const removeTool = (index) => {
+    const updatedTools = formData.tools.filter(
+      (_, i) => i !== index
+    )
+
+    setFormData({
+      ...formData,
+      tools: updatedTools,
+    })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    let totalMonthlySavings = 0
+
+    const recommendations = []
+
+    formData.tools.forEach((tool) => {
+      const spend = Number(tool.spend)
+
+      if (tool.tool === "Cursor" && tool.plan === "Business") {
+        totalMonthlySavings += spend * 0.3
+
+        recommendations.push(
+          "Downgrade Cursor Business to Pro for smaller teams."
+        )
+      }
+
+      if (tool.tool === "ChatGPT" && tool.plan === "Team") {
+        totalMonthlySavings += spend * 0.2
+
+        recommendations.push(
+          "Consider ChatGPT Plus instead of Team plan."
+        )
+      }
+    })
+
+    const aiSummary =
+      "This audit identified opportunities to optimize AI spending and improve subscription efficiency."
+
+    setAuditResult({
+      monthlySavings: totalMonthlySavings,
+      annualSavings: totalMonthlySavings * 12,
+      recommendations,
+      aiSummary,
+    })
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-black text-white p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-5xl font-bold mb-4">
+          AI Spend Audit Tool
+        </h1>
+
+        <p className="text-gray-400 mb-10">
+          Analyze and optimize your AI tool spending.
+        </p>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-8"
+        >
+          {formData.tools.map((tool, index) => (
+            <div
+              key={index}
+              className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Tool Name"
+                  value={tool.tool}
+                  onChange={(e) =>
+                    handleToolChange(
+                      index,
+                      "tool",
+                      e.target.value
+                    )
+                  }
+                  className="p-4 rounded-xl bg-black border border-zinc-700"
+                />
+
+                <input
+                  type="text"
+                  placeholder="Plan"
+                  value={tool.plan}
+                  onChange={(e) =>
+                    handleToolChange(
+                      index,
+                      "plan",
+                      e.target.value
+                    )
+                  }
+                  className="p-4 rounded-xl bg-black border border-zinc-700"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Monthly Spend ($)"
+                  value={tool.spend}
+                  onChange={(e) =>
+                    handleToolChange(
+                      index,
+                      "spend",
+                      e.target.value
+                    )
+                  }
+                  className="p-4 rounded-xl bg-black border border-zinc-700"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Seats"
+                  value={tool.seats}
+                  onChange={(e) =>
+                    handleToolChange(
+                      index,
+                      "seats",
+                      e.target.value
+                    )
+                  }
+                  className="p-4 rounded-xl bg-black border border-zinc-700"
+                />
+              </div>
+
+              {formData.tools.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeTool(index)}
+                  className="mt-4 text-red-400"
+                >
+                  Remove Tool
+                </button>
+              )}
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addTool}
+            className="bg-zinc-800 px-6 py-3 rounded-xl"
+          >
+            Add Another Tool
+          </button>
+
+          <div>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 transition p-5 rounded-2xl text-xl font-semibold"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              Generate Audit
+            </button>
+          </div>
+        </form>
+
+        {auditResult && (
+          <div className="mt-12 bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+            <h2 className="text-4xl font-bold mb-8">
+              Audit Results
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-black p-6 rounded-2xl border border-zinc-800">
+                <h3 className="text-gray-400 mb-2">
+                  Monthly Savings
+                </h3>
+
+                <p className="text-5xl font-bold text-green-400">
+                  ${auditResult.monthlySavings}
+                </p>
+              </div>
+
+              <div className="bg-black p-6 rounded-2xl border border-zinc-800">
+                <h3 className="text-gray-400 mb-2">
+                  Annual Savings
+                </h3>
+
+                <p className="text-5xl font-bold text-green-400">
+                  ${auditResult.annualSavings}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-black p-6 rounded-2xl border border-zinc-800 mb-6">
+              <h3 className="text-2xl font-semibold mb-4">
+                Recommendations
+              </h3>
+
+              {auditResult.recommendations.length > 0 ? (
+                <ul className="space-y-3">
+                  {auditResult.recommendations.map(
+                    (rec, index) => (
+                      <li
+                        key={index}
+                        className="text-gray-300"
+                      >
+                        • {rec}
+                      </li>
+                    )
+                  )}
+                </ul>
+              ) : (
+                <p className="text-gray-400">
+                  Your setup already looks optimized.
+                </p>
+              )}
+            </div>
+
+            <div className="bg-black p-6 rounded-2xl border border-zinc-800">
+              <h3 className="text-2xl font-semibold mb-4">
+                AI Summary
+              </h3>
+
+              <p className="text-gray-300 leading-7">
+                {auditResult.aiSummary}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
 }
